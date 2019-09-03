@@ -14,7 +14,7 @@ Before we get started with the motivating dataset, we need to cover the very bas
 ### 3.2.1 Objects
 Suppose a high school student asks us for help solving several quadratic equations of the form ax^2+bx+c=0. The quadratic formula gives us the solutions: 
 
-which of course change depending on the values of a, b and c. 
+which of course change depending on the values of `a`, ```b``` and ```c```. 
 One advantage of programming languages is that we can define variables and write expressions with these variables, similar to how we do so in math, but obtain a numeric solution. We will write out general code for the quadratic equation below, but if we are asked to solve  
 x^2+x−1=0, then we define:
 ```{r}
