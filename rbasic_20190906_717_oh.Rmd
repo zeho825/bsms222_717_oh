@@ -16,7 +16,7 @@ Suppose a high school student asks us for help solving several quadratic equatio
 
 which of course change depending on the values of `a`, ```b``` and ```c```. 
 One advantage of programming languages is that we can define variables and write expressions with these variables, similar to how we do so in math, but obtain a numeric solution. We will write out general code for the quadratic equation below, but if we are asked to solve  
-x^2+x−1=0, then we define:
+$x^2+x−1=0$, then we define:
 ```{r}
 a <- 1
 b <- 1
