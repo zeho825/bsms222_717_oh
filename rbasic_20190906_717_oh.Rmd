@@ -1,0 +1,538 @@
+---
+title: "rbasic_20190906_717_oh"
+output: 
+  rmdformats::readthedown:
+    highlight: kate
+---
+**R** 교과서 진행할때는 아래의 패키지 먼저 까셈
+```{r}
+if (!require("tidyverse"))
+  install.packages("tidyverse")
+if (!require("dslabs"))
+  install.packages("dslabs")
+  
+library(tidyverse)
+library(dslabs)
+```
+
+# 1. The basics of R
+## 1.1 The very basics
+the very basics of R부터 커버를 시작해 보죠.
+
+### 1.1.1 Objects
+아무 문자로 Objects지정 가능함, **variables: 변수**를 지정하는 것임.
+ex)  `a`, `b` and `c`, 즉
+각각의 **variables**에 **numeric: 수**의 값을 내장해보죠  
+```{r}
+a <- 1
+b <- 1
+c <- -1
+```
+__**R**에서 변수를 지정할때에는 `<-`를 주로 씀, `=`는 주로 숫자를 지정...__
+
+여기서 `a` variable을 보려먼 걍 `a`치면 그만. 만약 지정 안된 `d`를 치게 되면.. 오류메세지뜸
+```{r}
+a
+```
+**R**은 절때 assignment를 통해 값을 지정하지 않는이상 아무것도 print하지 않음.
+print되었다는 것은 variables에 값이 잘 저장되었음을 의미하며
+만약 실수가 있다면 error받게됨.
+
+물론 좀더 explicit하게 저장된 value를 보려면  `print` 고고싱
+```{r}
+print(a)
+```
+음 착각할까봐 말하는건데.. R에서 지칭하는 object는..
+1\. variable 2\.function 3\. complicated entities
+등등 저장된, 지정된 모든 것들을 지칭함.
+
+### 1.1.2 The workspace: R studio를 살펴봅시다.
+R workspace에 저장된 variables을 볼려면 `ls()`ㄱㄱ
+```{r}
+ls()
+```
+혹은..In RStudio, the **Environment tab** in (니 윈도우창 우측) 위쪽 shows the values.
+
+지금 위쪽 코드 진행 했으면 Enviroment 탭서 `a`, `b` and `c` 볼 수 있는데..
+
+만약 지정 안된 임의의 object 치면.. 에러뜸
+For example, if you type x you will receive the following message: "Error: object 'x' not found."
+
+쨌든 이어서 variables로 value들이 save되면..
+사용이 가능한데..
+우리가 어렸을 때 썼던 quadratic formula을 예로 들면..
+```{r}
+(-b + sqrt(b^2 - 4*a*c) ) / ( 2*a )
+(-b - sqrt(b^2 - 4*a*c) ) / ( 2*a )
+```
+
+### 1.1.3 Functions
+Once you define variables, the data analysis process can usually be described as a series of functions applied to the data. R includes several predefined functions and most of the analysis pipelines we construct make extensive use of these.
+
+예로 이야기 해보면 위의 코드 중에 이미  `install.packages`, `library`, and `ls functions` 함수들을 썼었어요
+또한 위의 근의 공식서 `sqrt`도 썼고..
+
+이와 같이 이미 prebuilt된 function들이 많고.. 심지어 `install.packages`나 너님께서 새로운 function 지정도 가능
+물론 이렇게 지정하거나 저장하기 전까진 못씀 ㅋㅋ
+
+In general, we need to use parentheses to evaluate a function. If you type `ls()`, the function is not evaluated and instead R shows you the code that defines the function. If you type `ls()` the function is evaluated and, as seen above, we see objects in the workspace.
+
+Unlike `ls()`, most functions require one or more arguments.  `log()`function을 예로 듭시다.. Remember that we earlier defined `a` to be 1:
+```{r}
+log(10)
+#a <- 1이라고 지정 했던걸 떠올려!!!
+log(a)
+```
+You can find out what the function expects and what it does by reviewing the very useful manuals included in R. You can get help by using the `help()` function like this:
+```{r}
+help("log")
+```
+
+For most functions, we can also use this shorthand `?function`:
+```{r}
+?log
+```
+
+The help page will show you what arguments the function is expecting in 너의 우측 아래 윈도우창 in R studio. 
+
+예를 들어서 위에처럼 help("log")치면 argument들 즉 x랑 base:밑 을 같이 반드시 입력해줘야함. 
+
+하지만 몇몇 argument들은 optional한 경우도 있는데..
+
+You can determine which arguments are optional by noting in the help document that a default value is assigned with =, 
+즉 아무것도 지정 안하면 그냥 default값으로 지정해버림. 
+이런걸 defining하는 것은 optional하죠.
+
+For example, the base of the function `log` defaults to base = exp(1) making log the natural log by default.
+
+만약에 요구되는 argument들을 help창 안열고 후딱 보고프면. `arg()`처보셈
+```{r}
+args(log)
+```
+
+You can change the default values by simply assigning another object:
+```{r}
+log(8, base = 2)
+```
+
+Note that we have not been specifying the argument x as such:
+```{r}
+log(x = 8, base = 2)
+```
+The above code works, but we can save ourselves some typing: if no argument name is used, R assumes you are entering arguments in the order shown in the help file or by args. So by not using the names, it assumes the arguments are x followed by base:
+```{r}
+log(8,2)
+```
+
+If using the arguments’ names, then we can include them in whatever order we want:
+```{r}
+log(base = 2, x = 8)
+```
+To specify arguments, we must use **=**, and cannot use **<-**.
+
+There are some exceptions to the rule that functions need the parentheses to be evaluated. Among these, the most commonly used are the arithmetic and relational operators. For example:
+```{r}
+2 ^ 3
+```
+You can see the arithmetic operators by typing:
+```{r}
+help("+")
+```
+or
+```{r}
+?"+"
+```
+and the relational operators by typing:
+```{r}
+help(">")
+```
+or
+```{r}
+?">"
+```
+### 1.1.4 Other prebuilt objects
+R에서 미리 저장되어있는 여러 dataset들이 있어요. 그래서 연습하거나 저장된 function들을 미리 써볼 수 도 있음
+You can see all the available datasets by typing:
+```{r}
+data()
+```
+This shows you the object name for these datasets. These datasets are objects that can be used by simply typing the name. For example, if you type:
+```{r}
+co2
+```
+R will show you Mauna Loa atmospheric CO2 concentration data.
+
+Other prebuilt objects are mathematical quantities, such as the constant π and ∞ :
+```{r}
+pi
+Inf
+Inf+1
+```
+
+### 1.1.5 Variable names
+
+We have used the letters a, b and c as variable names, but variable names can be almost anything. Some basic rules in R are that variable names have to start with a letter, can’t contain spaces and should not be variables that are predefined in R. For example, don’t name one of your variables install.packages by typing something like `install.packages()`.
+
+A nice convention to follow is to use meaningful words that describe what is stored, use only lower case, and use underscores as a substitute for spaces. For the quadratic equations, we could use something like this:
+```{r}
+solution_1 <- (-b + sqrt(b^2 - 4*a*c)) / (2*a)
+solution_2 <- (-b - sqrt(b^2 + 4*a*c)) / (2*a)
+```
+For more advice, we highly recommend studying Hadley [Wickham’s style guide](http://adv-r.had.co.nz/Style.html).
+
+### 1.1.6 Saving your workspace
+
+Values remain in the workspace until you end your session or erase them with the function rm. But workspaces also can be saved for later use. In fact, when you quit R, the programs asks you if you want to save your workspace. If you do save it, the next time you start R, the program will restore the workspace.
+
+We actually recommend against saving the workspace this way because, as you start working on different projects, it will become harder to keep track of what is saved. Instead, we recommend you assign the workspace a specific name. You can do this by using the function save or save.image. To load, use the function load. When saving a workspace, we recommend the suffix rda or RData. In RStudio, you can also do this by navigating to the Session tab and choosing Save Workspace as. You can later load it using the Load Workspace options in the same tab. You can read the help pages on save, save.image and load to learn more.
+
+### 1.1.7 Motivating scripts
+
+To solve another equation such as 3x2+2x−1, we can copy and paste the code above and then redefine the variables and recompute the solution:
+```{r}
+a <- 3
+b <- 2
+c <- -1
+(-b + sqrt(b^2 - 4*a*c)) / (2*a)
+(-b - sqrt(b^2 - 4*a*c)) / (2*a)
+```
+
+By creating and saving a script with the code above, we would not need to retype everything each time and, instead, simply change the variable names. Try writing the script above into an editor and notice how easy it is to change the variables and receive an answer.
+
+### 1.1.8 Commenting your code
+
+If a line of R code starts with the symbol #, it is not evaluated. We can use this to write reminders of why we wrote particular code. For example, in the script above we could add:
+
+```{r}
+## Code to compute solution to quadratic equation of the form ax^2 + bx + c ##
+## define the variables
+a <- 3 
+b <- 2
+c <- -1
+## now compute the solution
+(-b + sqrt(b^2 - 4*a*c)) / (2*a)
+(-b - sqrt(b^2 - 4*a*c)) / (2*a)
+```
+
+## Exercises
+1. What is the sum of the first 100 positive integers? The formula for the sum of integers 1 through n is n (n+1)/2. Define n = 100 and then use R to compute the sum of 1 through 100 using the formula. What is the sum?
+**_my answer:_**
+```{r}
+n = 100
+print(n*(n + 1)/2)
+```
+
+2. Now use the same formula to compute the sum of the integers from 1 through 1,000.
+**_my answer:_**
+```{r}
+n = 1000
+print(n*(n + 1)/2)
+```
+
+3. Look at the result of typing the following code into R:
+```{r}
+n <- 1000
+x <- seq(1, n)
+sum(x)
+```
+
+Based on the result, what do you think the functions seq and sum do? You can use the **help** system:
+
+A. **sum** creates a list of numbers and **seq** adds them up.
+B. **seq** creates a list of numbers and **sum** adds them up.
+C. **seq** computes the difference between two arguments and **sum** computes the sum of 1 through 1000.
+D. **sum** always returns the same number.
+
+**_my answer: c_**
+
+4. In math and programming, we say that we evaluate a function when we replace the argument with a given number. So if we type sqrt(4), we evaluate the sqrt function. In R, you can evaluate a function inside another function. The evaluations happen from the inside out. Use one line of code to compute the log, in base 10, of the square root of 100.
+```{r}
+
+```
+
+
+5. Which of the following will always return the numeric value stored in x? You can try out examples and use the help system if you want.
+
+A. log(10^x)
+
+B. log10(x^10)
+
+C. log(exp(x))
+
+D. exp(log(x, base = 2))
+
+
+## 1.2 Data types
+R에서 `Variables`은 수많은 다른 타입이 될수 있고 이걸 구별하는게 중요!!  
+For example, we need to distinguish numbers from character strings and tables from simple lists of numbers. 
+**The function `class()` helps us determine what type of object we have:**
+
+```{r}
+a <- 2
+class(a)
+```
+**R을 잘 다루기 위해서는 `variables`의 타입을 아는것이 중요하고 각각의 타입에 따라 어떤걸 할 수 있는지를 아는게 중요함**
+
+## 1.3 Data frames
+Up to now, the variables we have defined are just one number. This is not very useful for storing data. The most common way of storing a dataset in R is in a data frame. Conceptually, we can think of a data frame as a table with rows representing observations and the different variables reported for each observation defining the columns. Data frames are particularly useful for datasets because we can combine different data types into one object.
+
+A large proportion of data analysis challenges start with data stored in a data frame. For example, we stored the data for our motivating example in a data frame. You can access this dataset by loading the dslabs library and loading the murders dataset using the data function:
+
+```{r}
+library(dslabs)
+data(murders)
+```
+
+To see that this is in fact a data frame, we type:
+```{r}
+class(murders)
+```
+
+### 1.3.1 Examining an object
+
+The function str is useful for finding out more about the structure of an object:
+```{r}
+str(murders)
+```
+
+This tells us much more about the object. We see that the table has 51 rows (50 states plus DC) and five variables. We can show the first six lines using the function head:
+```{r}
+head(murders)
+```
+
+In this dataset, each state is considered an observation and five variables are reported for each state.
+
+Before we go any further in answering our original question about different states, let’s learn more about the components of this object.
+
+### 1.3.2 The accessor: $
+
+For our analysis, we will need to access the different variables represented by columns included in this data frame. To do this, we use the accessor operator $ in the following way:
+```{r}
+murders$population
+```
+
+But how did we know to use population? Previously, by applying the function str to the object murders, we revealed the names for each of the five variables stored in this table. We can quickly access the variable names using:
+```{r}
+names(murders)
+```
+
+It is important to know that the order of the entries in murders$population preserves the order of the rows in our data table. This will later permit us to manipulate one variable based on the results of another. For example, we will be able to order the state names by the number of murders.
+
+_Tip: R comes with a very nice auto-complete functionality that saves us the trouble of typing out all the names. Try typing murders$p then hitting the tab key on your keyboard. This functionality and many other useful auto-complete features are available when working in RStudio._
+
+### 1.3.3 Vectors: numerics, characters, and logical
+
+The object murders$population is not one number but several. We call these types of objects vectors. A single number is technically a vector of length 1, but in general we use the term vectors to refer to objects with several entries. The function length tells you how many entries are in the vector:
+
+```{r}
+pop <- murders$population
+print(pop)
+length(pop)
+```
+
+lar vector is numeric since population sizes are numbers:
+```{r}
+class(pop)
+```
+
+In a numeric vector, every entry must be a number.
+
+To store character strings, vectors can also be of class character. 
+For example, the state names are characters:
+```{r}
+class(murders$state)
+```
+As with numeric vectors, all entries in a character vector need to be a character.
+
+Another important type of vectors are logical vectors. These must be either TRUE or FALSE.
+```{r}
+z <- 3 == 2
+z
+class(z)
+```
+
+Here the `==` is a relational operator asking if 3 is equal to 2. In R, if you just use one `=`, you actually assign a variable, but if you use two == you test for equality.
+
+You can see the other relational operators by typing:
+
+```{r}
+?Comparison
+help(Comparison)
+```
+In future sections, you will see how useful relational operators can be.
+
+We discuss more important features of vectors after the next set of exercises.
+
+__**Advanced:** Mathematically, the values in pop are integers and there is an integer class in R. However, by default, numbers are assigned class numeric even when they are round integers. For example, class(1) returns numeric. You can turn them into class integer with the as.integer() function or by adding an L like this: 1L. Note the class by typing: class(1L)__
+
+### 1.3.4 Factors
+
+In the murders dataset, we might expect the region to also be a character vector. 
+However, it is not:
+
+```{r}
+class(murders$region)
+```
+
+It is a factor. Factors are useful for storing categorical data. We can see that there are only 4 regions by using the levels function:
+
+```{r}
+levels(murders$region)
+```
+
+In the background, R stores these levels as integers and keeps a map to keep track of the labels. This is more memory efficient than storing all the characters.
+
+
+Note that the levels have an order that is different from the order of appearance in the factor object. The default is for the levels to follow alphabetical order. However, often we want the levels to follow a different order. We will see several examples of this in the Data Visualization part of the book. The function reorder lets us change the order of the levels of a factor variable based on a summary computed on a numeric vector. We will demonstrate this with a simple example.
+
+Suppose we want the levels of the region by the total number of murders rather than alphabetical order. If there are values associated with each level, we can use the reorder and specify a data summary to determine the order. The following code takes the sum of the total murders in each region, and reorders the factor following these sums.
+
+```{r}
+region <- murders$region
+value <- murders$total
+region <- reorder(region, value, FUN = sum)
+levels(region)
+```
+The new order is in agreement with the fact that the Northeast has the least murders and the South has the most.
+
+**Warning:** Factors can be a source of confusion since sometimes they behave like characters and sometimes they do not. As a result, confusing factors and characters are a common source of bugs.
+
+### 1.3.5 Lists
+Data frames are a special case of lists. We will cover lists in more detail later, but know that they are useful because you can store any combination of different types. Below is an example of a list we created for you:
+```{r}
+record <- list("John Doe", 1234, c(95,82,91,97,93), "A")
+record
+class(record)
+```
+
+You might also encounter lists without variable names:
+
+We won’t be using lists until later, but you might encounter one in your own exploration of R. For this reason, we show you some basics here.
+
+As with data frames, you can extract the components of a list with the accessor $. In fact, data frames are a type of list.
+```{r}
+record$student_id
+```
+We can also use double square brackets ([[) like this:
+
+```{r}
+record[["student_id"]]
+```
+You should get used to the fact that in R, there are often several ways to do the same thing, such as accessing entries.
+
+### 1.3.6 Matrices
+
+Matrices are another type of object that are common in R. Matrices are similar to data frames in that they are two-dimensional: they have rows and columns. However, like numeric, character and logical vectors, entries in matrices have to be all the same type. For this reason data frames are much more useful for storing data, since we can have characters, factors and numbers in them.
+
+Yet matrices have a major advantage over data frames: we can perform a matrix algebra operations, a powerful type of mathematical technique. We do not describe these operations in this book, but much of what happens in the background when you perform a data analysis involves matrices. We cover matrices in more detail in Chapter 34.1 but describe them briefly here since some of the functions we will learn return matrices.
+
+We can define a matrix using the matrix function. We need to specify the number of rows and columns.
+
+```{r}
+mat <- matrix(1:12, 4, 3)
+mat
+```
+
+You can access specific entries in a matrix using square brackets `[`. If you want the second row, third column, you use:
+
+```{r}
+mat[2, 3]
+```
+
+If you want the entire second row, you leave the column spot empty
+```{r}
+mat[2, ]
+```
+
+Notice that this returns a vector, not a matrix.
+
+Similarly, if you want the entire third column, you leave the row spot empty:
+```{r}
+mat[, 3]
+```
+
+This is also a vector, not a matrix.
+you can acesss more than one column or more than one row if you like. 
+This will give you a new matrix.
+```{r}
+mat[, 2:3]
+```
+
+You can subset both rows and columns:
+
+```{r}
+mat[1:2, 2:3]
+```
+We can convert matrices into data frames using the function as.data.frame:
+
+```{r}
+as.data.frame(mat)
+```
+
+You can also use single square brackets ([) to access rows and columns of a data frame:
+
+```{r}
+data("murders")
+murders[25, 1]
+murders[2:3, ]
+```
+
+## Exercises
+
+1. Load the US murders dataset.
+```{r}
+library(dslabs)
+data(murders)
+murders
+```
+
+Use the function **str** to examine the structure of the **murders** object. We can see that this object is a data frame with 51 rows and five columns. Which of the following best describes the variables represented in this data frame?
+
+```{r}
+str(murders)
+```
+
+A. The 51 states.
+B. The murder rates for all 50 states and DC.
+C. The state name, the abbreviation of the state name, the state’s region, and the state’s population and total number of murders for 2010.
+D. str shows no relevant information.
+
+**_my answer: C _**
+
+2. What are the column names used by the data frame for these five variables?
+**_my answer: Just number ?? _**
+
+3. Use the accessor $ to extract the state abbreviations and assign them to the object a. What is the class of this object?
+
+```{r}
+a <- murders$state
+class(a)
+```
+**_my answer: character _**
+
+4. Now use the square brackets to extract the state abbreviations and assign them to the object b. Use the identical function to determine if a and b are the same.
+
+```{r}
+b <- murders[1:51, 1]
+class(b)
+```
+**_my answer: Yes, Object a and b are same data type. _**
+
+5. We saw that the region column stores a factor. You can corroborate this by typing:
+
+```{r}
+class(murders$region)
+```
+With one line of code, use the function levels and length to determine the number of regions defined by this dataset.
+
+**-my answer: _**
+```{r}
+length(levels(murders$region))
+```
+
+6. The function `table` takes a vector and returns the frequency of each element. You can quickly see how many states are in each region by applying this function. Use this function in one line of code to create a table of states per region.
+
+```{r}
+table(murders$region, murders$state)
+```
+?? table 함수가 벡터값을 가진다고 했는데.. 3개 입력해야 되는거 아닌가/....
