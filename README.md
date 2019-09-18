@@ -1,4 +1,7 @@
 # bsms222_717_oh_Biostatistics
+**If you want more information, please visit An's github, who is Assistant professor of Korea University and the instructor of Biostatistics.**
+https://github.com/joonan30
+
 BSMS 222, Fall 2019
 Time: Monday (5) and Wednesday (5)
 Location: Room B125, Hana Science Hall, Seoul Campus
@@ -7,6 +10,7 @@ Location: Room B125, Hana Science Hall, Seoul Campus
 Joon-Yong An, PhD
 Assistant Professor of Human Genetics
 School of Biosystem and Biomedical Science, College of Health Science
+
 
 ## 1. General Course Information
 ### 1.1. Course Details
@@ -35,7 +39,6 @@ After successfully completing this course you should be able to:
 1\.  Understand the basic concepts in biostatistics.
 
 2\.  Understand the basic skill sets in R programming language. 
-
 3\.  Become confident in using R for data analysis.
 
 4\.  Gain hand-on experience in data visualization.
@@ -59,15 +62,15 @@ In addition, slides and materials will be posted on the Blackboard as these beco
 
 Introduction, R & Rstudio (9/2)
 
-R basics (9/6; please note that we don’t have a class on 9/4 so it’s replaced with this date).
+[R basics (9/6; 수업 변경)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/rbasic_20190906_717_oh.html)
 
-R basics (9/9)
+[R basics (9/9)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/rbasic_20190909_717_oh.html)
 
-Programming basics (9/11)
+[Programming basics (9/11)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/Programming_basics_20190911_717_oh.html)
 
-Programming basics (9/16)
+[Programming basics (9/16)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/Programming_basics_20190916_717_oh.html)
 
-Tidyverse (9/18)
+[Tidyverse (9/18)](https://github.com/zeho825/bsms222_717_oh/blob/master/Tidyverse_20190918_717_oh.html)
 
 Tidyverse & importing data (9/23)
 
