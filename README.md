@@ -70,9 +70,9 @@ Introduction, R & Rstudio (9/2)
 
 [Programming basics (9/16)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/Programming_basics_20190916_717_oh.html)
 
-[Tidyverse (9/18)](https://github.com/zeho825/bsms222_717_oh/blob/master/Tidyverse_20190918_717_oh.html)
+[Tidyverse (9/18)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/Tidyverse_20190918_717_oh.html)
 
-Tidyverse & importing data (9/23)
+[Tidyverse & importing data (9/23)](https://htmlpreview.github.io/?https://github.com/zeho825/bsms222_717_oh/blob/master/Tidyverse_20190923_717_oh.html)
 
 #### Session 2 Data viz
 
