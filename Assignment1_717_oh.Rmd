@@ -1,0 +1,59 @@
+---
+title: "Assignment1_717_oh"
+output: html_notebook
+---
+
+# Introduction
+SCN2A는 신경세포에 있는 Na<sup>+</sup> channel Nav1.2를 코딩하는 유전자 이다. Nav1.2 channel은 Voltage-gated으로 early neurodevelopment 도중 action porential을 initation하는데 critical한 ㅇ역활을 한다. 최근에 연구 결과에서는 이 채널이 기능을 못하는 mutation이 일어났을 경우 autism spectrum disorders(ASD) 즉 자폐증을 유발 할 수 있으며, 반대로 기능이 과다한 mutation이 일어났을 경우 유아 발작을 일으키게 된다.
+
+SCN2A data set은 functional consequence에 관한 annotation을 포함하고 있고, 정상인과 환자들 간으로 나누어서 mutation이 정리되어 있다.
+이에 SCN2A data set을 살펴보아 visualization을 진행할 주제를 정하고, 실제 Visualization을 통해서 어떤 유의미한 결과가 있는지 살펴보려고 한다.
+
+# Method
+## 1. dataset 살피기
+먼저 SCN2A dataset을 불러왔다. 이 data set에는 Column에 관련된 헤더들이 있어서 이 정보를 건너뛰고 읽어오는 과정을 거쳤다.
+
+```{r}
+library(tidyverse)
+w = read_delim("table.scn2a.vep_20190916.txt", delim = '\t', skip = 91, progress = F)
+```
+
+
+다음으로 data set을 간단하게 보고 중요하다고 생각된 column들을 보았다. 
+```{r}
+table(w$Gene, w$Feature, w$BIOTYPE)
+table(w$Consequence)
+table(w$IMPACT)
+```
+
+
+아무래도 SCN2A에 관한 gene과 기능에 관한 data set이라 한가지 종류의 gene, 기능으로 정리된 것을 확인 할 수 있었다. Consequence 별로 보았을 때에 여러가지 종류가 있었던 것으로 파악이 되었다. 
+
+## 2. 주제 선정 
+
+data set을 간략하게 본 결과,  관한 설명으로 functional consequence에 관한 annotation을 포함하고 있다고 하였고, functional consequence에 관한 IMPACT를 보고자 한다.
+
+Consequence별로 보기 위해서 먼저 Consequence의 빈도를 보기로 하였다. 또한 Consequence에 따른 Impact정도를 살펴보기로 하였다.
+
+
+# Results
+Consequence의 종류 및 수
+```{r}
+w %>% 
+  ggplot(aes(Consequence)) +
+  geom_bar() +
+  coord_flip()
+```
+
+Consequence별로 각각의 IMPACT정도를 보기로 하였다.
+
+```{r}
+w %>%
+  ggplot(aes(IMPACT, Consequence)) +
+  geom_point()
+```
+
+# Conslusion
+1, 가장 많은 mutation은 missense varient가 가장 많았음. 그 다음 synonymous varient가 많았다. 다행히 이 두개의 Impact는 각각 low, moderate 으로 영향이 적은 수준으로 파악되었다. 
+
+2, High impact를 기록한 consequence들 중 stop_gained, frameshift_variant를 제외한 나머지는 미미하게 mutation이 일어났음.
