@@ -1,0 +1,464 @@
+---
+title: "Statistical_inference_20191120_717_oh"
+output: html_notebook
+---
+
+# Statistical inference {#inference}
+**Statistical Inference**: the part of statistics that helps distinguish patterns arising from signal from those arising from chance.
+
+
+## Polls
+
+Opinion polling has been conducted since the 19th century. The general goal is to describe the opinions held by a specific population on a given set of topics. In recent times, these polls have been pervasive during presidential elections. Polls are useful when interviewing every member of a particular population is logistically impossible. The general strategy is to interview a smaller group, chosen at random, and then infer the opinions of the entire population from the opinions of the smaller group. Statistical theory is used to justify the process. This theory is referred to as  _inference_ and it is the main topic of this chapter.
+
+Perhaps the best known opinion polls are those conducted to determine which candidate is preferred by voters in a given election. Political strategists make extensive use of polls to decide, among other things, how to invest resources. For example, they may want to know in which geographical locations to focus their "get out the vote" efforts. 
+
+Elections are a particularly interesting case of opinion polls because the actual opinion of the entire population is revealed on election day. Of course, it costs millions of dollars to run an actual election which makes polling a cost effective strategy for those that want to forecast the results. 
+
+Although typically the results of these polls are kept private, similar polls are conducted by news organizations because results tend to be of interest to the general public and made public. We will eventually be looking at such data.
+
+Real Clear Politics^[http://www.realclearpolitics.com] is an example of a news aggregator that organizes and publishes poll results. For example, they present the following poll results reporting estimates of the popular vote for the 2016 presidential election^[http://www.realclearpolitics.com/epolls/2016/president/us/general_election_trump_vs_clinton-5491.html]:
+
+
+
+Although in the United States the popular vote does not determine the result of the presidential election, we will use it as an illustrative and simple example of how well polls work. Forecasting the election is a more complex process since it involves combining results from 50 states and DC and we describe it in Section \@ref(election-forecasting).
+
+Let's make some observations about the table above. First, note that different polls, all taken days before the election, report a different _spread_:  the estimated difference between support for the two candidates. Notice also that the reported spreads hover around what ended up being the actual result: Clinton won the popular vote by 2.1%. We also see a column titled **MoE** which stands for _margin of error_. 
+
+In this section, we will show how the probability concepts we learned in the previous chapter can be applied to develop the statistical approaches that make polls an effective tool. We will learn the statistical concepts necessary to define _estimates_ and _margins of errors_, and show how we can use these to forecast final results relatively well and also provide an estimate of the precision of our forecast. Once we learn this, we will be able to understand two concepts that are ubiquitous in data science: _confidence intervals_ and _p-values_. Finally, to understand probabilistic statements about the probability of a candidate winning, we will have to learn about Bayesian modeling. In the final sections, we put it all together to recreate the simplified version of the FiveThirtyEight model and apply it to the 2016 election. 
+
+We start by connecting probability theory to the task of using polls to learn about a population.
+
+
+### The sampling model for polls
+
+To help us understand the connection between polls and what we have learned, let's construct a similar situation to the one pollsters face. To mimic the challenge real pollsters face in terms of competing with other pollsters for media attention, we will use an urn full of beads to represent  voters and pretend we are competing for a \$25 dollar prize. The challenge is to guess the spread between the proportion of blue and red beads in this urn (in this case, a pickle jar):
+
+Before making a prediction, you can take a sample (with replacement) from the urn. To mimic the fact that running polls is expensive, it costs you \$0.10 per each bead you sample. Therefore, if your sample size is 250, and you win, you will break even since you will pay \$25 to collect your \$25 prize. Your entry into the competition can be an interval. If the interval you submit contains the true proportion, you get half what you paid and pass to the second phase of the competition. In the second phase, the entry with the smallest interval is selected as the winner. 
+
+The __dslabs__ package includes a function that shows a random draw from this urn:
+
+```{r, eval=FALSE}
+set.seed(1)
+library(tidyverse)
+library(dslabs)
+take_poll(25)
+```
+
+```{r first-simulated-poll, echo=FALSE, message=FALSE, warning=FALSE}
+set.seed(1)
+library(tidyverse)
+library(dslabs)
+rafalib::mypar()
+take_poll(25)
+```
+
+Think about how you would construct your interval based on the data shown above. 
+
+We have just described a simple sampling model for opinion polls. The beads inside the urn represent the individuals that will vote on election day. Those that will vote for the Republican candidate are represented with red beads and the Democrats with the blue beads. For simplicity, assume there are no other colors. That is, that there are just two parties: Republican and Democratic. 
+
+## Populations, samples, parameters, and estimates
+EX) blue beads's proportion : $p$, red beads's proportion : $1-p$,  
+
+the spread *(차이)* $p - (1-p)$, which simplifies to $2p - 1$. 
+
+In statistical textbooks, the beads in the urn are called the _population_. The proportion of blue beads in the population $p$  is called a _parameter_. The 25 beads we see in the previous plot are called a _sample_. The task of statistical inference is to predict the parameter $p$ using the observed data in the sample. 
+
+Can we do this with the 25 observations above? It is certainly informative. For example, given that we see 13 red and 12 blue beads, it is unlikely that $p$ > .9 or $p$ < .1. But are we ready to predict with certainty that there are more red beads than blue in the jar?  
+
+We want to construct an estimate of $p$ using only the information we observe. An estimate should be thought of as a summary of the observed data that we think is informative about the parameter of interest. It seems intuitive to think that the proportion of blue beads in the sample $0.48$ must be at least related to the actual proportion $p$. But do we simply predict $p$ to be 0.48? First, remember that the sample proportion is a random variable. If we run the command `take_poll(25)` four times, we get a different answer each time, since the sample proportion is a random variable. 
+
+
+```{r four-simulated-polls, echo=FALSE}
+par(mfrow=c(2,2), mar = c(3, 1, 3, 0), mgp = c(1.5, 0.5, 0)) 
+take_poll(25); take_poll(25); take_poll(25); take_poll(25)
+```
+
+ 
+Note that in the four random samples shown above, the sample proportions range from 0.44 to 0.60. By describing the distribution of this random variable, we will be able to gain insights into how good this estimate is and how we can make it better.
+
+### The sample average
+
+Conducting an opinion poll is being modeled as taking a random sample from an urn. We are proposing the use of the proportion of blue beads in our sample as an _estimate_ of the parameter $p$. Once we have this estimate, we can easily report an estimate for the spread $2p-1$, but for simplicity we will illustrate the concepts for estimating $p$. We will use our knowledge of probability to defend our use of the sample proportion and quantify how close we think it is from the population proportion $p$.
+
+We start by defining the random variable $X$ as: $X=1$ if we pick a blue bead at random and $X=0$ if it is red. This implies that the population is a list of 0s and 1s. If we sample $N$ beads, then the average of the draws $X_1, \dots, X_N$ is equivalent to the proportion of blue beads in our sample. This is because adding the $X$s is equivalent to counting the blue beads and dividing this count by the total $N$ is equivalent to computing a proportion. We use the symbol $\bar{X}$ to represent this average. In general, in statistics textbooks a bar on top of a symbol means the average. The theory we just learned about the sum of draws becomes useful because the average is a sum of draws multiplied by the constant $1/N$:
+
+$$\bar{X} = 1/N \times \sum_{i=1}^N X_i$$
+
+For simplicity, let's assume that the draws are independent: after we see each sampled bead, we return it to the urn. In this case, what do we know about the distribution of the sum of draws? First, we know that the expected value of the sum of draws is $N$ times the average of the values in the urn. We know that the average of the 0s and 1s in the urn must be $p$, the proportion of blue beads.
+
+Here we encounter an important difference with what we did in the Probability chapter: we don't know what is in the urn. We know there are blue and red beads, but we don't know how many of each. This is what we want to find out: we are trying to **estimate** $p$. 
+
+### Parameters
+
+Just like we use variables to define unknowns in systems of equations, in statistical inference we define _parameters_ to define unknown parts of our models. In the urn model which we are using to mimic an opinion poll, we do not know the proportion of blue beads in the urn. We define the parameters $p$ to represent this quantity. $p$ is the average of the urn because if we take the average of the 1s (blue) and 0s (red), we get the proportion of blue beads. Since our main goal is figuring out what is $p$, we are going to _estimate this parameter_. 
+
+The ideas presented here on how we estimate parameters, and provide insights into how good these estimates are, extrapolate to many data science tasks. For example, we may want to determine the difference in health improvement between patients receiving treatment and a control group. We may ask, what are the health effects of smoking on a population? What are the differences in racial groups of fatal shootings by police? What is the rate of change in life expectancy in the US during the last 10 years? All these questions can be framed as a task of estimating a parameter from a sample.
+
+### Polling versus forecasting
+
+Before we continue, let's make an important clarification related to the practical problem of forecasting the election. If a poll is conducted four months before the election, it is estimating the $p$ for that moment and not for election day. The $p$ for election night might be different since people's opinions fluctuate through time. The polls provided the night before the election tend to be the most accurate since opinions don't change that much in a day. However, forecasters try to build tools that model how opinions vary across time and try to predict the election night results taking into consideration the fact that opinions fluctuate. We will describe some approaches for doing this in a later section. 
+
+### Properties of our estimate: expected value and standard error 
+
+To understand how good our estimate is, we will describe the statistical properties of the random variable defined above: the sample proportion $\bar{X}$. Remember that $\bar{X}$ is the sum of independent draws so the rules we covered in the probability chapter apply.
+
+Using what we have learned, the expected value of the sum $N\bar{X}$ is $N \times$ the average of the urn, $p$. So dividing by the non-random constant $N$ gives us that the expected value of the average $\bar{X}$ is $p$. We can write it using our mathematical notation:
+
+$$
+\mbox{E}(\bar{X}) = p
+$$
+
+We can also use what we learned to figure out the standard error: the standard error of the sum is $\sqrt{N} \times$ the standard deviation of the urn. Can we compute the standard error of the urn? We learned a formula that tells us that it is $(1-0) \sqrt{p (1-p)}$ = $\sqrt{p (1-p)}$. Because we are dividing the sum by $N$, we arrive at the following formula for the standard error of the average:
+
+$$
+\mbox{SE}(\bar{X}) = \sqrt{p(1-p)/N}
+$$
+
+This result reveals the power of polls. The expected value of the sample proportion $\bar{X}$ is the parameter of interest $p$ and we can make the standard error as small as we want by increasing $N$. The law of large numbers tells us that with a large enough poll, our estimate converges to $p$.
+
+If we take a large enough poll to make our standard error about 1%, we will be quite certain about who will win. But how large does the poll have to be for the standard error to be this small? 
+
+One problem is that we do not know $p$, so we can't compute the standard error. However, for illustrative purposes, let's assume that $p=0.51$ and make a plot of the standard error versus the sample size $N$: 
+
+```{r standard-error-versus-sample-size, echo=FALSE, message=FALSE, warning=FALSE}
+p <- 0.51
+N <- 10^seq(1,5, len=100)
+data.frame(N=N, SE = sqrt(p*(1-p)/N)) %>% 
+  ggplot(aes(N, SE)) + 
+  geom_line() + 
+  scale_x_continuous(breaks = c(10,100,1000,10000), trans = "log10")
+```
+
+From the plot we see that we would need a poll of over 10,000 people to get the standard error that low. We rarely see polls of this size due in part to costs. From the Real Clear Politics table, we learn that the sample sizes in opinion polls range from 500-3,500 people. For a sample size of 1,000 and $p=0.51$, the standard error is:
+```{r}
+sqrt(p*(1-p))/sqrt(1000)
+```
+
+or 1.5 percentage points. So even with large polls, for close elections, $\bar{X}$ can lead us astray if we don't realize it is a random variable. Nonetheless, we can actually say more about how close we get the $p$ and we do that in Section \@ref(clt).
+
+## Exercises
+
+1\. Suppose you poll a population in which a proportion $p$ of voters are Democrats and $1-p$ are Republicans. Your sample size is $N=25$. Consider the random variable $S$ which is the **total** number of Democrats in your sample. What is the expected value of this random variable? Hint: it's a function of $p$.
+
+**Answer : $25p$**
+
+2\. What is the standard error of $S$ ? Hint: it's a function of $p$.
+
+**Answer : $\sqrt{25p(1 - p)}$**
+
+3\. Consider the random variable $S/N$. This is equivalent to the sample average, which we have been denoting as $\bar{X}$. What is the expected value of the $\bar{X}$? Hint: it's a function of $p$.
+
+**Answer : $p$**
+
+4\. What is the standard error of $\bar{X}$? Hint: it's a function of $p$.
+
+**Answer : $\sqrt{p(1 - p)/N}$**
+
+5\. Write a line of code that gives you the standard error `se` for the problem above for several values of $p$, specifically for `p <- seq(0, 1, length = 100)`. Make a plot of `se` versus `p`. 
+```{r}
+N <- 25
+p <- seq(0, 1, length = 100)
+se <- sqrt(p*(1-p)/N)
+plot(p, se)
+```
+
+
+6\. Copy the code above and put it inside a for-loop to make the plot for $N=25$, $N=100$, and $N=1000$. 
+```{r}
+N <- c(25, 100, 1000)
+for(n in N){se <- sqrt(p*(1-p)/n)
+plot(p, se)
+}
+```
+
+
+7\. If we are interested in the difference in proportions, $p - (1-p)$, our estimate is $d = \bar{X} - (1-\bar{X})$. Use the rules we learned about sums of random variables and scaled random variables to derive the expected value of $d$.
+**Answer : $\mbox{E}[\bar{X} - (1-\bar{X})] = \mbox{E}[2\bar{X} - 1] = 2\mbox{E}[\bar{X}] - 1 = 2p - 1$**
+
+8\. What is the standard error of $d$?
+
+**Answer : $\mbox{SE}[\bar{X} - (1-\bar{X})] = \mbox{SE}[2\bar{X} - 1] = 2\mbox{SE}[\bar{X}] = 2\sqrt{p(1-p)/N}$**
+
+9\. If the actual $p=.45$, it means the Republicans are winning by a relatively large margin since $d= -.1$, which is a 10% margin of victory. In this case, what is the standard error of $2\hat{X}-1$ if we take a sample of $N=25$? 
+```{r}
+N <- 25
+p <- 0.45
+2*sqrt(p*(1-p)/N)
+```
+
+10\. Given the answer to 9, which of the following best describes your strategy of using a sample size of $N=25$?
+
+a. The expected value of our estimate $2\bar{X}-1$ is $d$, so our prediction will be right on.
+**b. Our standard error is larger than the difference, so the chances of $2\bar{X}-1$ being positive and throwing us off were not that small. We should pick a larger sample size.**
+c. The difference is 10% and the standard error is about 0.2, therefore much smaller than the difference.
+d. Because we don't know $p$, we have no way of knowing that making $N$ larger would actually improve our standard error.
+
+
+## Central Limit Theorem in practice {#clt}
+
+The CLT tells us that the distribution function for a sum of draws is approximately normal. We also learned that dividing a normally distributed random variable by a constant is also a normally distributed variable. This implies that the distribution of $\bar{X}$ is approximately normal. 
+
+In summary, we have that $\bar{X}$ has an approximately normal distribution with expected value $p$ and standard error $\sqrt{p(1-p)/N}$. 
+
+Now how does this help us? Suppose we want to know what is the probability that we are within 1% from $p$. We are basically asking what is
+
+$$
+\mbox{Pr}(| \bar{X} - p| \leq .01)
+$$
+which is the same as:
+
+$$
+\mbox{Pr}(\bar{X}\leq p + .01) - \mbox{Pr}(\bar{X} \leq p - .01)
+$$
+
+Can we answer this question?  We can use the mathematical trick we learned in the previous chapter. Subtract the expected value and divide by the standard error to get a standard normal random variable, call it $Z$, on the left. Since $p$ is the expected value and $\mbox{SE}(\bar{X}) = \sqrt{p(1-p)/N}$ is the standard error we get:
+
+$$
+\mbox{Pr}\left(Z \leq \frac{ \,.01} {\mbox{SE}(\bar{X})} \right) -
+\mbox{Pr}\left(Z \leq - \frac{ \,.01} {\mbox{SE}(\bar{X})} \right) 
+$$
+
+One problem we have is that since we don't know $p$, we don't know $\mbox{SE}(\bar{X})$. But it turns out that the CLT still works if we estimate the standard error by using $\bar{X}$ in place of $p$. We say that we _plug-in_ the estimate. Our estimate of the standard error is therefore:
+
+$$
+\hat{\mbox{SE}}(\bar{X})=\sqrt{\bar{X}(1-\bar{X})/N}
+$$
+In statistics textbooks, we use a little hat to denote estimates. The estimate can be constructed using the observed data and $N$. 
+
+Now we continue with our calculation, but dividing by $\hat{\mbox{SE}}(\bar{X})=\sqrt{\bar{X}(1-\bar{X})/N})$ instead. In our first sample we had 12 blue and 13 red so $\bar{X} = 0.48$ and our estimate of standard error is: 
+
+```{r}
+x_hat <- 0.48
+se <- sqrt(x_hat*(1-x_hat)/25)
+se
+```
+
+And now we can answer the question of the probability of being close to $p$. The answer is:
+
+```{r}
+pnorm(0.01/se) - pnorm(-0.01/se)
+```
+
+Therefore, there is a small chance that we will be close. A poll of only $N=25$ people is not really very useful, at least not for a close election. 
+
+Earlier we mentioned the _margin of error_. Now we can define it because it is simply two times the standard error, which we can now estimate. In our case it is:
+
+```{r}
+1.96*se
+```
+
+Why do we multiply by 1.96? Because if you ask what is the probability that we are within 1.96 standard errors from $p$, we get:
+
+$$
+\mbox{Pr}\left(Z \leq \, 1.96\,\mbox{SE}(\bar{X})  / \mbox{SE}(\bar{X}) \right) -
+\mbox{Pr}\left(Z \leq - 1.96\, \mbox{SE}(\bar{X}) / \mbox{SE}(\bar{X}) \right) 
+$$
+which is:
+
+$$
+\mbox{Pr}\left(Z \leq 1.96 \right) -
+\mbox{Pr}\left(Z \leq - 1.96\right) 
+$$
+
+which we know is about 95\%:
+
+```{r}
+pnorm(1.96)-pnorm(-1.96)
+```
+
+Hence, there is a 95% probability that $\bar{X}$ will be within $1.96\times \hat{SE}(\bar{X})$, in our case within about `r round(1.96*se, 2)`, of $p$. Note that 95% is somewhat of an arbitrary choice and sometimes other percentages are used, but it is the most commonly used value to define margin of error. We often round 1.96 up to 2 for simplicity of presentation.
+
+In summary, the CLT tells us that our poll based on a sample size of $25$ is not very useful. We don't really learn much when the margin of error is this large. All we can really say is that the popular vote will not be won by a large margin. This is why pollsters tend to use larger sample sizes. 
+
+From the table above, we see that typical sample sizes range from 700 to 3500. To see how this gives us a much more practical result, notice that if we had obtained a $\bar{X}$=0.48 with a sample size of 2,000, our standard error $\hat{\mbox{SE}}(\bar{X})$ would have been `r n<-2000;se<-sqrt(0.48*(1-0.48)/n);se`. So our result is an estimate of `48`% with a margin of error of `r round(2*se*100)`%. In this case, the result is much more informative and would make us think that there are more red balls than blue. Keep in mind, however, that this is hypothetical. We did not take a poll of 2,000 since we don't want to ruin the competition.
+
+
+### A Monte Carlo simulation
+
+
+Suppose we want to use a Monte Carlo simulation to corroborate the tools we have built using probability theory. To create the simulation, we would write code like this:
+
+```{r, eval=FALSE}
+B <- 10000
+N <- 1000
+x_hat <- replicate(B, {
+  x <- sample(c(0,1), size = N, replace = TRUE, prob = c(1-p, p))
+  mean(x)
+})
+```
+
+The problem is, of course, we don't know `p`. We could construct an urn like the one pictured above and run an analog (without a computer) simulation. It would take a long time, but you could take 10,000 samples, count the beads and keep track of the proportions of blue. We can use the function `take_poll(n=1000)` instead of drawing from an actual urn, but it would still take time to count the beads and enter the results.
+
+One thing we therefore do to corroborate theoretical results is to pick one or several values of `p` and run the simulations.  Let's set `p=0.45`.  We can then simulate a poll:
+
+```{r}
+p <- 0.45
+N <- 1000
+x <- sample(c(0,1), size = N, replace = TRUE, prob = c(1-p, p))
+x_hat <- mean(x)
+```
+
+In this particular sample, our estimate is `x_hat`. We can use that code to do a Monte Carlo simulation:
+
+```{r}
+B <- 10000
+x_hat <- replicate(B, {
+  x <- sample(c(0,1), size = N, replace = TRUE, prob = c(1-p, p))
+  mean(x)
+})
+```
+
+To review, the theory tells us that $\bar{X}$ is approximately normally distributed, has expected value $p=$ `r p` and standard error $\sqrt{p(1-p)/N}$ = `r sqrt(p*(1-p)/N)`. The simulation confirms this:
+
+```{r}
+mean(x_hat)
+sd(x_hat)
+```
+
+A histogram and qq-plot confirm that the normal approximation is accurate as well:
+
+```{r normal-approximation-for-polls, echo=FALSE, warning=FALSE, message=FALSE, out.width="100%", fig.height=3}
+library(tidyverse)
+library(gridExtra)
+p1 <- data.frame(x_hat=x_hat) %>% 
+  ggplot(aes(x_hat)) + 
+  geom_histogram(binwidth = 0.005, color="black")
+p2 <-  data.frame(x_hat=x_hat) %>% 
+  ggplot(aes(sample=x_hat)) + 
+  stat_qq(dparams = list(mean=mean(x_hat), sd=sd(x_hat))) +
+  geom_abline() + 
+  ylab("x_hat") + 
+  xlab("Theoretical normal")
+grid.arrange(p1,p2, nrow=1)
+```
+
+Of course, in real life we would never be able to run such an experiment because we don't know $p$. But we could run it for various values of $p$ and $N$ and see that the theory does indeed work well for most values. You can easily do this by re-running the code above after changing `p` and `N`.
+
+### The spread
+
+The competition is to predict the spread, not the proportion $p$. However, because we are assuming there are only two parties, we know that the spread is $p - (1-p) = 2p - 1$.  As a result, everything we have done can easily be adapted to an estimate of $2p - 1$. Once we have our estimate $\bar{X}$ and $\hat{\mbox{SE}}(\bar{X})$, we estimate the spread with $2\bar{X} - 1$ and, since we are multiplying by 2, the standard error is $2\hat{\mbox{SE}}(\bar{X})$. Note that subtracting 1 does not add any variability so it does not affect the standard error. 
+
+For our 25 item sample above, our estimate $p$ is `.48` with margin of error `.20` and our estimate of the spread is `0.04` with margin of error `.40`. Again, not a very useful sample size. However, the point is that once we have an estimate and standard error for $p$, we have it for the spread $2p-1$.
+
+
+### Bias: why not run a very large poll?
+
+For realistic values of $p$, say from 0.35 to 0.65, if we run a very large poll with 100,000 people, theory tells us that we would predict the election perfectly since the largest possible margin of error is around 0.3\%:
+
+```{r standard-error-versus-p, echo=FALSE}
+N <- 100000
+p <- seq(0.35, 0.65, length = 100)
+SE <- sapply(p, function(x) 2*sqrt(x*(1-x)/N))
+qplot(p, SE, geom = "line")
+``` 
+
+One reason is that running such a poll is very expensive. Another possibly more important reason is that theory has its limitations. Polling is much more complicated than picking beads from an urn. Some people might lie to pollsters and others might not have phones. But perhaps the most important way an actual poll differs from an urn model is that we actually don't know for sure who is in our population and who is not. How do we know who is going to vote? Are we reaching all possible voters? Hence, even if our margin of error is very small, it might not be exactly right that our expected value is $p$. We call this bias. Historically, we observe that polls are indeed biased, although not by that much. The typical bias appears to be about 1-2%. This makes election forecasting a bit more interesting and we will talk about how to model this in a later chapter.
+
+## Exercises
+
+1\. Write an _urn model_ function that takes the proportion of Democrats $p$ and the sample size $N$ as arguments and returns the sample average if Democrats are 1s and Republicans are 0s. Call the function `take_sample`. 
+```{r}
+take_sample <- function(p, N){
+  X <- sample(c(0,1), size = N, replace = TRUE, prob = c(1 - p, p))
+  mean(X)
+}
+```
+
+2\. Now assume `p <- 0.45` and that your sample size is $N=100$. Take a sample 10,000 times and save the vector of `mean(X) - p` into an object called `errors`. Hint: use the function you wrote for exercise 1 to write this in one line of code.
+```{r}
+p <- 0.45
+N <- 100
+B <- 10000
+errors <- replicate(B, take_sample(p, N) - p)
+```
+
+
+3\. The vector `errors` contains, for each simulated sample, the difference between the actual $p$ and our estimate $\bar{X}$. We refer to this difference as the _error_. Compute the average and make a histogram of the errors generated in the Monte Carlo simulation and select which of the following best describes their distributions:
+
+```{r}
+mean(errors)
+hist(errors)
+```
+
+a. The errors are all about 0.05.  
+b. The errors are all about -0.05.  
+**c. The errors are symmetrically distributed around 0.**  
+d. The errors range from -1 to 1.  
+
+
+4\. The error $\bar{X}-p$ is a random variable. In practice, the error is not observed because we do not know $p$. Here we observe it because we constructed the simulation.  What is the average size of the error if we define the size by taking the absolute value $\mid \bar{X} - p \mid$ ?
+```{r}
+mean(abs(errors))
+```
+
+5\. The standard error is related to the typical **size** of the error we make when predicting. We say **size** because we just saw that the errors are centered around 0, so thus the average error value is 0. For mathematical reasons related to the Central Limit Theorem, we actually use the standard deviation of `errors` rather than the average of the absolute values to quantify the typical size. What is this standard deviation of the errors?
+```{r}
+sqrt(mean(errors^2))
+```
+
+6\. The theory we just learned tells us what this standard deviation is going to be because it is the standard error of $\bar{X}$. What does theory tell us is the standard error of $\bar{X}$ for a sample size of 100?
+```{r}
+N <- 100
+sqrt(p*(1-p)/N)
+```
+
+7\. In practice, we don't know $p$, so we construct an estimate of the theoretical prediction based by plugging in $\bar{X}$ for $p$. Compute this estimate. Set the seed at 1 with `set.seed(1)`.
+```{r}
+set.seed(1)
+X <- sample(c(0,1), size = N, replace = TRUE, prob = c(1 - p, p))
+barX <- mean(X)
+sqrt(barX*(1-barX)/N)
+```
+
+8\. Note how close the standard error estimates obtained from the Monte Carlo simulation (exercise 5), the theoretical prediction (exercise 6), and the estimate of the theoretical prediction (exercise 7) are. The theory is working and it gives us a practical approach to knowing the typical error we will make if we predict $p$ with $\bar{X}$. Another advantage that the theoretical result provides is that it gives an idea of how large a sample size is required to obtain the precision we need. Earlier we learned that the largest standard errors occur for $p=0.5$. Create a plot of the largest standard error for $N$ ranging from 100 to 5,000. Based on this plot, how large does the sample size have to be to have a standard error of about 1%?
+
+```{r}
+N <- seq(100, 5000, 100)
+p <- 0.5
+se <- sqrt(p*(1-p)/N)
+plot <- data.frame(N,se)
+plot %>% ggplot(aes(N,se)) + geom_point() + geom_hline(yintercept = 0.01, linetype = 'dashed', color='red')
+```
+
+
+a. 100  
+b. 500  
+**c. 2,500**  
+d. 4,000  
+
+
+9\. For sample size $N=100$, the central limit theorem tells us that the distribution of $\bar{X}$ is:
+
+a. practically equal to $p$.  
+**b. approximately normal with expected value $p$ and standard error $\sqrt{p(1-p)/N}$.**  
+c. approximately normal with expected value $\bar{X}$ and standard error $\sqrt{\bar{X}(1-\bar{X})/N}$.  
+d. not a random variable.  
+
+
+10\. Based on the answer from exercise 8, the error $\bar{X} - p$ is:
+
+a. practically equal to 0.  
+**b. approximately normal with expected value $0$ and standard error $\sqrt{p(1-p)/N}$.**  
+c. approximately normal with expected value $p$ and standard error $\sqrt{p(1-p)/N}$.  
+d. not a random variable.  
+
+11\. To corroborate your answer to exercise 9, make a qq-plot of the `errors` you generated in exercise 2 to see if they follow a normal distribution. 
+```{r fig.height=9, fig.width=16}
+qqnorm(errors)
+qqline(errors)
+```
+
+12\. If $p=0.45$ and $N=100$ as in exercise 2, use the CLT to estimate the probability that $\bar{X}>0.5$. You can assume you know $p=0.45$ for this calculation.
+```{r}
+p <- 0.45
+N <- 100
+1-pnorm(0.5, p, sqrt(p*(1-p)/N))
+```
+
+13\. Assume you are in a practical situation and you don't know $p$. Take a sample of size $N=100$ and obtain a sample average of $\bar{X} = 0.51$. What is the CLT approximation for the probability that your error is equal to or larger than 0.01?
+```{r}
+bar_X <- 0.51
+se_bar <- sqrt(bar_X*(1-bar_X)/N)
+1 - pnorm(0.01, 0, se_bar) + pnorm(-0.01, 0, se_bar)
+```
