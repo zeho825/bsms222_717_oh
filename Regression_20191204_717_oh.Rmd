@@ -1,0 +1,171 @@
+---
+title: "Regression_20191204_717_oh"
+output: html_notebook
+---
+
+# Regression aka 회귀 {#regression}
+
+Up to this point, this book has focused mainly on single variables. However, in data science applications, it is very common to be interested in the relationship between two or more variables. For instance, in Chapter \@ref(linear-models) we will use a data-driven approach that examines the relationship between player statistics and success to guide the building of a baseball team with a limited budget.  Before delving into this more complex example, we introduce necessary concepts needed to understand regression using a simpler illustration. We actually use the dataset from which regression was born.
+
+The example is from genetics. Francis Galton^[https://en.wikipedia.org/wiki/Francis_Galton] studied the variation and heredity of human traits. Among many other traits, Galton collected and studied height data from families to try to understand heredity. While doing this, he developed the concepts of correlation and regression, as well as a connection to pairs of data that follow a normal distribution. Of course, at the time this data was collected our knowledge of genetics was quite limited compared to what we know today. A very specific question Galton tried to answer was: how well can we predict a child's height based on the parents' height? The technique he developed to answer this question, regression, can also be applied to our baseball question.  Regression can be applied in many other circumstances as well.
+
+__Historical note__: Galton made important contributions to statistics and genetics, but he was also one of the first proponents of eugenics, a scientifically flawed philosophical movement favored by many biologists of Galton's time but with horrific historical consequences. You can read more about it here: [https://pged.org/history-eugenics-and-genetics/](https://pged.org/history-eugenics-and-genetics/).
+
+## Case study: is height hereditary?
+
+We have access to Galton's family height data through the __HistData__ package. This data contains heights on several dozen families: mothers, fathers, daughters, and sons. To imitate Galton's analysis, we will create a dataset with the heights of fathers and a randomly selected son of each family: 
+
+```{r, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(HistData)
+data("GaltonFamilies")
+
+set.seed(1983)
+galton_heights <- GaltonFamilies %>%
+  filter(gender == "male") %>%
+  group_by(family) %>%
+  sample_n(1) %>%
+  ungroup() %>%
+  select(father, childHeight) %>%
+  rename(son = childHeight)
+```
+
+In the exercises, we will look at other relationships including mothers and daughters.
+
+Suppose we were asked to summarize the father and son data. Since both distributions are well approximated by the normal distribution, we could use the two averages and two standard deviations as summaries:
+
+```{r, message=FALSE, warning=FALSE}
+galton_heights %>% 
+  summarize(mean(father), sd(father), mean(son), sd(son))
+```
+
+However, this summary fails to describe an important characteristic of the data: the trend that the taller the father, the taller the son. 
+
+```{r scatterplot, fig.height = 3, fig.width = 3, out.width="40%"}
+galton_heights %>% 
+  ggplot(aes(father, son)) + 
+  geom_point(alpha = 0.5)
+```
+
+We will learn that the correlation coefficient is an informative summary of how two variables move together and then see how this can be used to predict one variable using the other.
+
+
+## The correlation coefficient {#corr-coef}
+
+The correlation coefficient is defined for a list of pairs $(x_1, y_1), \dots, (x_n,y_n)$ as the average of the product of the standardized values:
+
+$$
+\rho = \frac{1}{n} \sum_{i=1}^n \left( \frac{x_i-\mu_x}{\sigma_x} \right)\left( \frac{y_i-\mu_y}{\sigma_y} \right)
+$$
+with $\mu_x, \mu_y$ the averages of $x_1,\dots, x_n$ and $y_1, \dots, y_n$, respectively, and $\sigma_x, \sigma_y$ the standard deviations. The Greek letter $\rho$ is commonly used in statistics books to denote the correlation. The Greek letter for $r$, $\rho$, because it is the first letter of regression. Soon we learn about the connection between correlation and regression. We can represent the formula above with R code using:
+
+```{r, eval=FALSE}
+rho <- mean(scale(x) * scale(y))
+```
+
+To understand why this equation does in fact summarize how two variables move together, consider the $i$-th entry of $x$ is  $\left( \frac{x_i-\mu_x}{\sigma_x} \right)$ SDs away from the average. Similarly, the $y_i$ that is paired with $x_i$, is $\left( \frac{y_1-\mu_y}{\sigma_y} \right)$ SDs away from the average $y$. If $x$ and $y$ are unrelated, the product $\left( \frac{x_i-\mu_x}{\sigma_x} \right)\left( \frac{y_i-\mu_y}{\sigma_y} \right)$ will be positive ( $+ \times +$ and $- \times -$ ) as often as negative ($+ \times -$ and $- \times +$) and will average out to about 0. This correlation is the average and therefore unrelated variables will have 0 correlation. If instead the quantities vary together, then we are averaging mostly positive products ( $+ \times +$ and $- \times -$) and we get a positive correlation. If they vary in opposite directions, we get a negative correlation. 
+
+The correlation coefficient is always between -1 and 1. We can show this mathematically: consider that we can't have higher correlation than when we compare a list to itself (perfect correlation) and in this case the correlation is:
+
+$$
+\rho = \frac{1}{n} \sum_{i=1}^n \left( \frac{x_i-\mu_x}{\sigma_x} \right)^2 = 
+\frac{1}{\sigma_x^2} \frac{1}{n} \sum_{i=1}^n \left( x_i-\mu_x \right)^2 = 
+\frac{1}{\sigma_x^2} \sigma^2_x = 
+1
+$$
+
+A similar derivation, but with $x$ and its exact opposite, proves the correlation has to be bigger or equal to -1.
+
+For other pairs, the correlation is in between -1 and 1. The correlation between father and son's heights is about 0.5:
+
+```{r}
+galton_heights %>% summarize(r = cor(father, son)) %>% pull(r)
+```
+
+To see what data looks like for different values of $\rho$, here are six examples of pairs with correlations ranging from -0.9 to 0.99:
+
+```{r what-correlation-looks-like, echo=FALSE}
+n <- 250
+cors <- c(-0.9,-0.5,0,0.5,0.9,0.99)
+sim_data <- lapply(cors,function(r) MASS::mvrnorm(n,c(0,0), matrix(c(1,r,r,1),2,2)))
+sim_data <- Reduce(rbind, sim_data)
+sim_data <- cbind( rep(cors, each=n), sim_data)
+colnames(sim_data) <- c("r","x","y")
+as.data.frame(sim_data) %>% 
+  ggplot(aes(x,y)) + 
+  facet_wrap(~r) + 
+  geom_point(alpha = 0.5) +
+  geom_vline(xintercept = 0,lty=2) + 
+  geom_hline(yintercept = 0,lty=2) 
+```
+
+
+### Sample correlation is a random variable
+
+Before we continue connecting correlation to regression, let's remind ourselves about random variability.
+
+In most data science applications, we observe data that includes random variation. For example, in many cases, we do not observe data for the entire population of interest but rather for a random sample. As with the average and standard deviation, the *sample correlation* is the most commonly used estimate of the population correlation. This implies that the correlation we compute and use as a summary is a random variable.
+
+By way of illustration, let's assume that the `r nrow(galton_heights)` pairs of fathers and sons is our entire population. A less fortunate geneticist can only afford measurements from a random sample of 25 pairs. The sample correlation can be computed with:
+
+```{r}
+R <- sample_n(galton_heights, 25, replace = TRUE) %>% 
+  summarize(r = cor(father, son)) %>% pull(r)
+```
+
+`R` is a random variable. We can run a Monte Carlo simulation to see its distribution:
+
+```{r sample-correlation-distribution}
+B <- 1000
+N <- 25
+R <- replicate(B, {
+  sample_n(galton_heights, N, replace = TRUE) %>% 
+    summarize(r=cor(father, son)) %>% 
+    pull(r)
+})
+qplot(R, geom = "histogram", binwidth = 0.05, color = I("black"))
+```
+
+We see that the expected value of `R` is the population correlation:
+
+```{r}
+mean(R)
+```
+
+and that it has a relatively high standard error relative to the range of values `R` can take:
+
+```{r}
+sd(R)
+```
+
+So, when interpreting correlations, remember that correlations derived from samples are estimates containing uncertainty.
+
+Also, note that because the sample correlation is an average of independent draws, the central limit actually applies. Therefore, for large enough $N$, the distribution of `R` is approximately normal with expected value $\rho$. The standard deviation, which is somewhat complex to derive, is $\sqrt{\frac{1-r^2}{N-2}}$. 
+
+In our example, $N=25$ does not seem to be large enough to make the approximation a good one:
+
+```{r small-sample-correlation-not-normal, out.width="40%"}
+ggplot(aes(sample=R), data = data.frame(R)) + 
+  stat_qq() + 
+  geom_abline(intercept = mean(R), slope = sqrt((1-mean(R)^2)/(N-2)))
+```
+
+If you increase $N$, you will see the distribution converging to normal.
+
+### Correlation is not always a useful summary
+
+Correlation is not always a good summary of the relationship between two variables. The following four artificial datasets, referred to as Anscombe's quartet, famously illustrate this point. All these pairs have a correlation of 0.82:
+
+```{r ascombe-quartet,echo=FALSE}
+anscombe %>% mutate(row = seq_len(n())) %>%
+  gather(name, value, -row) %>% 
+  separate(name, c("axis", "group"), sep=1) %>%
+  spread(axis, value) %>% select(-row) %>%
+  ggplot(aes(x,y)) +
+  facet_wrap(~group)  +
+  geom_smooth(method="lm", fill=NA, fullrange=TRUE) + 
+  geom_point()
+#+  geom_point(bg="orange", color="red", cex=3, pch=21)
+```
+
+Correlation is only meaningful in a particular context. To help us understand when it is that correlation is meaningful as a summary statistic, we will return to the example of predicting a son's height using his father's height. This will help motivate and define linear regression. We start by demonstrating how correlation can be useful for prediction.
